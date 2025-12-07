@@ -132,17 +132,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ title, isManager, onSwitchToRegis
           </button>
         </form>
 
-        {!isManager && (
-          <div className="mt-6 text-center text-sm text-slate-500">
-            Don't have an account?{' '}
-            <button 
-              onClick={onSwitchToRegister}
-              className="text-blue-600 font-medium hover:underline"
-            >
-              Create account
-            </button>
-          </div>
-        )}
+        <div className="mt-6 text-center text-sm text-slate-500">
+          Don't have an account?{' '}
+          <button 
+            onClick={onSwitchToRegister}
+            className={`font-medium hover:underline ${isManager ? 'text-indigo-600' : 'text-blue-600'}`}
+          >
+            Create account
+          </button>
+        </div>
       </div>
     </div>
   );

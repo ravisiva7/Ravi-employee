@@ -5,13 +5,13 @@ import { supabase } from '../services/supabaseClient';
 interface RegisterPageProps {
   onSwitchToLogin: () => void;
   onBack: () => void;
+  isManager?: boolean;
 }
 
-const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onBack }) => {
+const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onBack, isManager = false }) => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  // Role is hardcoded to EMPLOYEE for public registration
   const [department, setDepartment] = useState('Engineering');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +24,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onBack }) 
     try {
       // Construct email from username
       // We use lowerCase for consistency
-      const email = `${username.trim().toLowerCase()}@timetrack.local`;
+      const safeUsername = username.trim().toLowerCase();
+      const email = `${safeUsername}@timetrack.local`;
+
+      // SPECIAL LOGIC: Allow 'raviadmin' to register as MANAGER to bootstrap the system
+      // OR if explicitly registering via Manager portal
+      const role = (isManager || safeUsername === 'raviadmin') ? 'MANAGER' : 'EMPLOYEE';
+      const userDepartment = role === 'MANAGER' ? 'Administration' : department;
 
       // 1. Sign up user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -42,9 +48,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onBack }) 
             id: authData.user.id,
             name,
             email, 
-            role: 'EMPLOYEE', // Enforce Employee role
+            role: role, // Dynamic role based on username check or prop
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`,
-            department: department
+            department: userDepartment
           });
 
         if (profileError) {
@@ -116,8 +122,12 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onBack }) 
         </button>
 
         <div className="text-center mb-8 pt-4">
-          <h1 className="text-2xl font-bold text-slate-800">Create Account</h1>
-          <p className="text-slate-500 mt-2">Join TimeTrack Pro as an Employee</p>
+          <h1 className="text-2xl font-bold text-slate-800">
+            {isManager ? 'Create Manager Account' : 'Create Account'}
+          </h1>
+          <p className="text-slate-500 mt-2">
+            {isManager ? 'Join TimeTrack Pro as a Manager' : 'Join TimeTrack Pro as an Employee'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -175,31 +185,35 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onBack }) 
             </div>
           </div>
 
-          <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
-              <div className="relative">
-              <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <select
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full pl-10 pr-2 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none text-sm"
-              >
-                  <option value="Engineering">Engineering</option>
-                  <option value="Product">Product</option>
-                  <option value="Design">Design</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="HR">HR</option>
-                  <option value="Sales">Sales</option>
-              </select>
-              </div>
-          </div>
+          {!isManager && (
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
+                <div className="relative">
+                <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <select
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full pl-10 pr-2 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none text-sm"
+                >
+                    <option value="Engineering">Engineering</option>
+                    <option value="Product">Product</option>
+                    <option value="Design">Design</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="HR">HR</option>
+                    <option value="Sales">Sales</option>
+                </select>
+                </div>
+            </div>
+          )}
 
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm flex justify-center mt-2"
+            className={`w-full text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm flex justify-center mt-2 ${
+                isManager ? 'bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300' : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300'
+            }`}
           >
-             {loading ? <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : 'Create Account'}
+             {loading ? <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : (isManager ? 'Create Manager Account' : 'Create Account')}
           </button>
         </form>
 
@@ -207,7 +221,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin, onBack }) 
           Already have an account?{' '}
           <button 
             onClick={onSwitchToLogin}
-            className="text-blue-600 font-medium hover:underline"
+            className={`font-medium hover:underline ${isManager ? 'text-indigo-600' : 'text-blue-600'}`}
           >
             Sign in
           </button>

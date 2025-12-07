@@ -24,6 +24,13 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, employees, o
     }
   };
 
+  const formatDuration = (hours: number) => {
+    if (!hours || hours <= 0) return '-';
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+
   const showActions = onEdit || onDelete;
 
   return (
@@ -64,7 +71,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, employees, o
                   {record.checkOut ? format(parseISO(record.checkOut), 'hh:mm a') : '--:--'}
                 </td>
                 <td className="px-6 py-4 font-medium text-slate-700">
-                  {record.durationHours > 0 ? `${record.durationHours} hrs` : '-'}
+                  {formatDuration(record.durationHours)}
                 </td>
                 <td className="px-6 py-4">
                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium border border-transparent ${getStatusColor(record.status)}`}>

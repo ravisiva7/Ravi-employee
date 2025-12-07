@@ -7,7 +7,7 @@ import ManagerDashboard from './components/ManagerDashboard';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import { supabase } from './services/supabaseClient';
 
-type AuthView = 'LANDING' | 'LOGIN_EMPLOYEE' | 'LOGIN_MANAGER' | 'REGISTER_EMPLOYEE';
+type AuthView = 'LANDING' | 'LOGIN_EMPLOYEE' | 'LOGIN_MANAGER' | 'REGISTER_EMPLOYEE' | 'REGISTER_MANAGER';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -240,7 +240,7 @@ const App: React.FC = () => {
         <LoginPage 
           title="Manager Portal"
           isManager={true}
-          onSwitchToRegister={() => {}} // Managers cannot register
+          onSwitchToRegister={() => setAuthView('REGISTER_MANAGER')} 
           onBack={() => setAuthView('LANDING')}
         />
       );
@@ -248,6 +248,14 @@ const App: React.FC = () => {
       return (
         <RegisterPage 
           onSwitchToLogin={() => setAuthView('LOGIN_EMPLOYEE')} 
+          onBack={() => setAuthView('LANDING')}
+        />
+      );
+    case 'REGISTER_MANAGER':
+      return (
+        <RegisterPage 
+          isManager={true}
+          onSwitchToLogin={() => setAuthView('LOGIN_MANAGER')} 
           onBack={() => setAuthView('LANDING')}
         />
       );

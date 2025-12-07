@@ -86,18 +86,28 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ currentUser, reco
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [selectedMonth, today, previousMonthStart, previousMonthEnd, myRecords]);
 
+  // --- Helper for Duration Formatting ---
+  const formatDuration = (hours: number) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+
   // --- Stats Calculation ---
   const stats = useMemo(() => {
     const totalRecords = filteredRecords.length;
     const present = filteredRecords.filter(r => r.status === 'Present').length;
     const late = filteredRecords.filter(r => r.status === 'Late').length;
-    const totalHours = filteredRecords.reduce((acc, curr) => acc + curr.durationHours, 0);
-    const avgHours = totalRecords > 0 ? (totalHours / totalRecords).toFixed(1) : '0';
+    
+    // Sum exact decimal hours
+    const totalHoursDecimal = filteredRecords.reduce((acc, curr) => acc + curr.durationHours, 0);
+    const avgHoursDecimal = totalRecords > 0 ? totalHoursDecimal / totalRecords : 0;
+    
     const attendanceRate = totalRecords > 0 ? Math.round(((present + late) / totalRecords) * 100) : 0;
 
     return {
-      totalHours: Math.round(totalHours),
-      avgHours,
+      totalHours: formatDuration(totalHoursDecimal),
+      avgHours: formatDuration(avgHoursDecimal),
       attendanceRate,
       late,
       present
@@ -364,7 +374,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ currentUser, reco
                                  <UserCheck size={20} />
                                  Completed
                              </div>
-                             <div className="text-xs text-slate-500 mt-1">{todayRecord.durationHours} hrs worked</div>
+                             <div className="text-xs text-slate-500 mt-1">{formatDuration(todayRecord.durationHours)} worked</div>
                          </div>
                     )}
                 </div>
