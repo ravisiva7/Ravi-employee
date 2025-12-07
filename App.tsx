@@ -40,6 +40,7 @@ const App: React.FC = () => {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         // If we don't have the user profile yet, fetch it
+        // We check current user.id to avoid redundant fetches if already loaded
         if (!user || user.id !== session.user.id) {
           await fetchProfile(session.user.id);
         }
@@ -52,7 +53,7 @@ const App: React.FC = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [user]);
+  }, [user?.id]); // Depend on user ID to avoid stale closure issues if needed
 
   const fetchProfile = async (userId: string, retries = 3) => {
     try {
@@ -62,25 +63,29 @@ const App: React.FC = () => {
         .eq('id', userId)
         .single();
 
-      if (error) {
-        // If row not found (common right after signup), retry a few times
-        if (retries > 0) {
-          setTimeout(() => fetchProfile(userId, retries - 1), 1000);
-          return;
-        }
-        console.error('Final profile fetch error:', error);
-        setLoading(false);
-        return;
-      }
+      if (error) throw error;
 
       if (data) {
         setUser(data as User);
-        fetchAppData(); // Fetch records after user is confirmed
+        // Profile loaded successfully, now fetch application data
+        await fetchAppData(); 
+      } else {
+        throw new Error("Profile not found");
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      if (retries === 0) {
-         setLoading(false);
+      
+      if (retries > 0) {
+        // Retry logic
+        // We use a timeout to delay the retry, but we don't await the timeout here 
+        // to block execution. However, we must ensure loading doesn't stop yet.
+        setTimeout(() => fetchProfile(userId, retries - 1), 1000);
+      } else {
+        // Retries exhausted - stop loading so UI can show something (likely Landing page)
+        console.error("Failed to load profile after multiple attempts.");
+        setLoading(false);
+        // If we have a session but no profile, something is wrong. 
+        // We might want to sign them out or let them fall back to landing.
       }
     }
   };
@@ -123,6 +128,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error fetching app data:', error);
     } finally {
+      // Ensure loading is ALWAYS turned off after app data attempt
       setLoading(false);
     }
   };
